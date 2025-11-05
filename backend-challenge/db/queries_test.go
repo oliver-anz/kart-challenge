@@ -1,57 +1,41 @@
 package db
 
 import (
-	"backend-challenge/models"
-	"os"
 	"testing"
 )
 
 func setupTestDB(t *testing.T) *DB {
-	// Create temporary database
-	dbPath := "test.db"
+	// Use the committed database
+	dbPath := "../data/store.db"
+
 	db, err := New(dbPath)
 	if err != nil {
-		t.Fatalf("Failed to create test database: %v", err)
+		t.Fatalf("Failed to open test database: %v", err)
 	}
 
-	// Cleanup function
+	// Cleanup function (close but don't delete committed database)
 	t.Cleanup(func() {
 		db.Close()
-		os.Remove(dbPath)
 	})
 
 	return db
 }
 
-func TestInsertAndGetProduct(t *testing.T) {
+func TestGetProductByID(t *testing.T) {
 	db := setupTestDB(t)
 
-	product := &models.Product{
-		ID:       "1",
-		Name:     "Test Product",
-		Category: "Test",
-		Price:    9.99,
-		Image: &models.ProductImage{
-			Thumbnail: "thumb.jpg",
-			Mobile:    "mobile.jpg",
-		},
-	}
-
-	if err := db.InsertProduct(product); err != nil {
-		t.Fatalf("Failed to insert product: %v", err)
-	}
-
-	retrieved, err := db.GetProductByID("1")
+	// Test existing product from init.sql (Waffle with Berries, ID=1)
+	product, err := db.GetProductByID("1")
 	if err != nil {
 		t.Fatalf("Failed to get product: %v", err)
 	}
 
-	if retrieved == nil {
+	if product == nil {
 		t.Fatal("Expected product, got nil")
 	}
 
-	if retrieved.Name != product.Name || retrieved.Price != product.Price {
-		t.Errorf("Product mismatch: got %+v, want %+v", retrieved, product)
+	if product.Name != "Waffle with Berries" || product.Price != 6.5 {
+		t.Errorf("Product mismatch: got %+v, want Name='Waffle with Berries' Price=6.5", product)
 	}
 }
 
@@ -71,41 +55,27 @@ func TestGetProductByID_NotFound(t *testing.T) {
 func TestGetAllProducts(t *testing.T) {
 	db := setupTestDB(t)
 
-	products := []*models.Product{
-		{ID: "1", Name: "Product 1", Category: "Cat1", Price: 10.0},
-		{ID: "2", Name: "Product 2", Category: "Cat2", Price: 20.0},
-	}
-
-	for _, p := range products {
-		if err := db.InsertProduct(p); err != nil {
-			t.Fatalf("Failed to insert product: %v", err)
-		}
-	}
-
 	all, err := db.GetAllProducts()
 	if err != nil {
 		t.Fatalf("Failed to get all products: %v", err)
 	}
 
-	if len(all) != 2 {
-		t.Errorf("Expected 2 products, got %d", len(all))
+	// init.sql has 9 products
+	if len(all) != 9 {
+		t.Errorf("Expected 9 products, got %d", len(all))
 	}
 }
 
 func TestIsCouponValid(t *testing.T) {
 	db := setupTestDB(t)
 
-	// Insert valid coupon
-	if err := db.InsertCoupon("TESTCODE", 2); err != nil {
-		t.Fatalf("Failed to insert coupon: %v", err)
-	}
-
 	tests := []struct {
 		name  string
 		code  string
 		valid bool
 	}{
-		{"valid coupon", "TESTCODE", true},
+		{"valid coupon from init.sql", "HAPPYHRS", true},
+		{"another valid coupon", "FIFTYOFF", true},
 		{"invalid coupon", "INVALID", false},
 		{"empty coupon", "", true},
 		{"too short", "SHORT", false},
@@ -129,24 +99,13 @@ func TestIsCouponValid(t *testing.T) {
 func TestProductImage_NilHandling(t *testing.T) {
 	db := setupTestDB(t)
 
-	// Product without image
-	product := &models.Product{
-		ID:       "1",
-		Name:     "No Image Product",
-		Category: "Test",
-		Price:    5.0,
-	}
-
-	if err := db.InsertProduct(product); err != nil {
-		t.Fatalf("Failed to insert product: %v", err)
-	}
-
-	retrieved, err := db.GetProductByID("1")
+	// Vanilla Panna Cotta (ID=9) has images in init.sql
+	retrieved, err := db.GetProductByID("9")
 	if err != nil {
 		t.Fatalf("Failed to get product: %v", err)
 	}
 
-	if retrieved.Image != nil {
-		t.Errorf("Expected nil image, got %+v", retrieved.Image)
+	if retrieved.Image == nil {
+		t.Errorf("Expected image for Vanilla Panna Cotta, got nil")
 	}
 }

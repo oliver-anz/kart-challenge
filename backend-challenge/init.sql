@@ -16,19 +16,18 @@ CREATE TABLE products (
 );
 
 CREATE TABLE valid_coupons (
-    code TEXT PRIMARY KEY,
-    occurrence_count INTEGER NOT NULL
+    code TEXT PRIMARY KEY
 );
 
 -- Insert valid coupons (from coupon processing)
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('BIRTHDAY', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('BUYGETON', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('FIFTYOFF', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('FREEZAAA', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('GNULINUX', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('HAPPYHRS', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('OVER9000', 2);
-INSERT INTO valid_coupons (code, occurrence_count) VALUES ('SIXTYOFF', 2);
+INSERT INTO valid_coupons (code) VALUES ('BIRTHDAY');
+INSERT INTO valid_coupons (code) VALUES ('BUYGETON');
+INSERT INTO valid_coupons (code) VALUES ('FIFTYOFF');
+INSERT INTO valid_coupons (code) VALUES ('FREEZAAA');
+INSERT INTO valid_coupons (code) VALUES ('GNULINUX');
+INSERT INTO valid_coupons (code) VALUES ('HAPPYHRS');
+INSERT INTO valid_coupons (code) VALUES ('OVER9000');
+INSERT INTO valid_coupons (code) VALUES ('SIXTYOFF');
 
 -- Insert products
 INSERT INTO products (id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop) VALUES ("1", "Waffle with Berries", "Waffle", 6.5, "https://orderfoodonline.deno.dev/public/images/image-waffle-thumbnail.jpg", "https://orderfoodonline.deno.dev/public/images/image-waffle-mobile.jpg", "https://orderfoodonline.deno.dev/public/images/image-waffle-tablet.jpg", "https://orderfoodonline.deno.dev/public/images/image-waffle-desktop.jpg");

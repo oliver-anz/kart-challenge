@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -16,22 +17,19 @@ import (
 
 func setupIntegrationTest(t *testing.T) (*httptest.Server, func()) {
 	dbPath := "test_integration.db"
+
+	// Initialize database from init.sql
+	cmd := exec.Command("sqlite3", dbPath, ".read init.sql")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to initialize test database: %v", err)
+	}
+
 	database, err := db.New(dbPath)
 	if err != nil {
-		t.Fatalf("Failed to create test database: %v", err)
+		t.Fatalf("Failed to open test database: %v", err)
 	}
 
-	// Insert test data
-	products := []*models.Product{
-		{ID: "1", Name: "Waffle", Category: "Breakfast", Price: 6.5},
-		{ID: "2", Name: "Cake", Category: "Dessert", Price: 4.5},
-	}
-	for _, p := range products {
-		database.InsertProduct(p)
-	}
-
-	database.InsertCoupon("HAPPYHRS", 2)
-	database.InsertCoupon("FIFTYOFF", 2)
+	// init.sql already contains all necessary test data (9 products and 8 coupons)
 
 	handler := api.NewHandler(database)
 	router := handler.SetupRoutes()
@@ -63,8 +61,8 @@ func TestIntegration_FullOrderFlow(t *testing.T) {
 
 	var products []models.Product
 	json.NewDecoder(resp.Body).Decode(&products)
-	if len(products) != 2 {
-		t.Errorf("Expected 2 products, got %d", len(products))
+	if len(products) != 9 {
+		t.Errorf("Expected 9 products, got %d", len(products))
 	}
 
 	// 2. Get specific product
@@ -76,8 +74,8 @@ func TestIntegration_FullOrderFlow(t *testing.T) {
 
 	var product models.Product
 	json.NewDecoder(resp.Body).Decode(&product)
-	if product.Name != "Waffle" {
-		t.Errorf("Expected Waffle, got %s", product.Name)
+	if product.Name != "Waffle with Berries" {
+		t.Errorf("Expected 'Waffle with Berries', got %s", product.Name)
 	}
 
 	// 3. Place order with coupon

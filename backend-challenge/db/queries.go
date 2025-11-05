@@ -86,12 +86,6 @@ func (db *DB) GetProductByID(id string) (*models.Product, error) {
 	return &p, nil
 }
 
-func (db *DB) InsertCoupon(code string, count int) error {
-	query := `INSERT OR REPLACE INTO valid_coupons (code, occurrence_count) VALUES (?, ?)`
-	_, err := db.Exec(query, code, count)
-	return err
-}
-
 func (db *DB) IsCouponValid(code string) (bool, error) {
 	// Empty coupon code is valid (no coupon provided)
 	if code == "" {

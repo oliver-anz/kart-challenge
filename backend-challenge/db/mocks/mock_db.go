@@ -84,34 +84,6 @@ func (mr *MockDatabaseMockRecorder) GetProductByID(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockDatabase)(nil).GetProductByID), id)
 }
 
-// InsertCoupon mocks base method.
-func (m *MockDatabase) InsertCoupon(code string, count int) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertCoupon", code, count)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InsertCoupon indicates an expected call of InsertCoupon.
-func (mr *MockDatabaseMockRecorder) InsertCoupon(code, count any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertCoupon", reflect.TypeOf((*MockDatabase)(nil).InsertCoupon), code, count)
-}
-
-// InsertProduct mocks base method.
-func (m *MockDatabase) InsertProduct(p *models.Product) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertProduct", p)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InsertProduct indicates an expected call of InsertProduct.
-func (mr *MockDatabaseMockRecorder) InsertProduct(p any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertProduct", reflect.TypeOf((*MockDatabase)(nil).InsertProduct), p)
-}
-
 // IsCouponValid mocks base method.
 func (m *MockDatabase) IsCouponValid(code string) (bool, error) {
 	m.ctrl.T.Helper()

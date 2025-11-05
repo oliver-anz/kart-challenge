@@ -8,8 +8,6 @@ import "backend-challenge/models"
 type Database interface {
 	GetAllProducts() ([]models.Product, error)
 	GetProductByID(id string) (*models.Product, error)
-	InsertProduct(p *models.Product) error
 	IsCouponValid(code string) (bool, error)
-	InsertCoupon(code string, count int) error
 	Close() error
 }
