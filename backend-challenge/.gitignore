@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 coupon/process_log*.txt
 .idea
+test*.db
+coverage.out
+coverage.html
