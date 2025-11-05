@@ -1,0 +1,8 @@
+coupon/*.gz
+data/*.txt
+backend-challenge
+*.pyc
+__pycache__/
+.DS_Store
+coupon/process_log*.txt
+.idea

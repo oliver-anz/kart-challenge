@@ -81,15 +81,16 @@ See `coupon/README.md` for reproduction steps.
 ```
 backend-challenge/
 ├── main.go                 # Entry point
-├── api/                    # HTTP handlers, routes
+├── api/                    # HTTP handlers, routes, middleware
 ├── db/                     # Database setup, queries
 ├── models/                 # Data structures
 ├── coupon/                 # Coupon processing (standalone)
-│   ├── process_coupons.py  # Main script
+│   ├── process_coupons.py  # Preprocessing script
 │   ├── valid_coupons.txt   # Results (8 codes)
 │   └── README.md           # Reproduction steps
-└── data/
-    └── store.db            # SQLite database
+├── data/
+│   └── store.db            # SQLite database (pre-populated)
+└── init.sql                # Database initialization SQL
 ```
 
 ## Testing

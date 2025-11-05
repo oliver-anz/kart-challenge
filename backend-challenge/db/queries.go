@@ -43,7 +43,8 @@ func (db *DB) GetAllProducts() ([]models.Product, error) {
 			return nil, err
 		}
 
-		if thumbnail.Valid || mobile.Valid || tablet.Valid || desktop.Valid {
+		// Only create Image object if at least one field has actual content
+		if thumbnail.String != "" || mobile.String != "" || tablet.String != "" || desktop.String != "" {
 			p.Image = &models.ProductImage{
 				Thumbnail: thumbnail.String,
 				Mobile:    mobile.String,
@@ -72,7 +73,8 @@ func (db *DB) GetProductByID(id string) (*models.Product, error) {
 		return nil, err
 	}
 
-	if thumbnail.Valid || mobile.Valid || tablet.Valid || desktop.Valid {
+	// Only create Image object if at least one field has actual content
+	if thumbnail.String != "" || mobile.String != "" || tablet.String != "" || desktop.String != "" {
 		p.Image = &models.ProductImage{
 			Thumbnail: thumbnail.String,
 			Mobile:    mobile.String,
@@ -91,6 +93,7 @@ func (db *DB) InsertCoupon(code string, count int) error {
 }
 
 func (db *DB) IsCouponValid(code string) (bool, error) {
+	// Empty coupon code is valid (no coupon provided)
 	if code == "" {
 		return true, nil
 	}

@@ -5,7 +5,6 @@ import (
 	"backend-challenge/models"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -36,11 +35,6 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if productID == "" {
 		h.sendError(w, http.StatusBadRequest, "error", "Invalid product ID")
-		return
-	}
-
-	if _, err := strconv.Atoi(productID); err != nil {
-		h.sendError(w, http.StatusBadRequest, "error", "Invalid ID supplied")
 		return
 	}
 

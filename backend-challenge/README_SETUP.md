@@ -118,23 +118,20 @@ Coupons are validated based on:
 
 ## Full Coupon Preprocessing (Optional)
 
-To process all coupons from the original files:
+The database already contains all 8 valid coupons. To regenerate them from scratch:
 
 ```bash
-# 1. Download coupon files (if not already downloaded)
-curl -o data/couponbase1.gz https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase1.gz
-curl -o data/couponbase2.gz https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase2.gz
-curl -o data/couponbase3.gz https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase3.gz
+# 1. Download coupon files to coupon/ directory
+cd coupon
+curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase1.gz
+curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase2.gz
+curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase3.gz
 
-# 2. Run preprocessing (WARNING: This can take a long time due to file size)
-# The files are very large (2GB+ total compressed)
-# Use the optimized preprocessing script:
-./preprocess.sh
+# 2. Run preprocessing (WARNING: Takes ~3 hours on M3 Pro, requires 15-18GB RAM)
+python3 process_coupons.py > valid_coupons.txt
 ```
 
-**Note:** The preprocessing script (`preprocess.sh`) uses grep to extract valid coupons. Due to the large file sizes (625MB-704MB compressed, several GB uncompressed), this can take 10+ minutes.
-
-For quick testing, the database is already populated with known valid test coupons.
+See `coupon/README.md` for details on the preprocessing algorithm.
 
 ## Project Structure
 
@@ -151,12 +148,13 @@ backend-challenge/
 ├── models/
 │   └── models.go          # Data structures
 ├── coupon/
-│   └── processor.go       # Coupon preprocessing logic (for reference)
+│   ├── process_coupons.py  # Coupon preprocessing script
+│   ├── valid_coupons.txt   # 8 valid coupon codes
+│   └── README.md           # Coupon processing documentation
 ├── data/
-│   └── store.db          # SQLite database
-├── quick_setup.py        # Quick database setup script
-├── preprocess.sh         # Full coupon preprocessing script
-└── README_SETUP.md       # This file
+│   └── store.db           # SQLite database (pre-populated)
+├── init.sql               # Database initialization SQL
+└── README_SETUP.md        # This file
 ```
 
 ## Configuration
