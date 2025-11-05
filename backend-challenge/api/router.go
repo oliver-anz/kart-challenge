@@ -8,6 +8,15 @@ import (
 func (h *Handler) SetupRoutes() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/public/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/yaml")
+		http.ServeFile(w, r, "openapi.yaml")
+	})
+
 	mux.HandleFunc("/api/product", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

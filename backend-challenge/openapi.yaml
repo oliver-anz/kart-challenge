@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info:
+  title: Order Food Online - OpenAPI 3.1
+  description: |-
+    This is a e-commerce API based on the OpenAPI 3.1 specification.  You can find out more about
+
+    Use API key `apitest`
+
+    Some useful links:
+    - [Repository](https://github.com/oolio-group/front-end-cart)
+
+  version: 1.0.0
+externalDocs:
+  description: Find out more about the challenge
+  url: http://swagger.io
+servers:
+  - url: https://orderfoodonline.deno.dev/api
+tags:
+  - name: product
+    description: Everything about products
+  - name: order
+    description: Place Orderso
+paths:
+  /product:
+    get:
+      tags:
+        - product
+      summary: List products
+      description: Get all products available for order
+      operationId: listProducts
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+  /product/{productId}:
+    get:
+      tags:
+        - product
+      summary: Find product by ID
+      description: Returns a single product
+      operationId: getProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Product not found
+  /order:
+    post:
+      tags:
+        - order
+      summary: Place an order
+      description: Place a new order in the store
+      operationId: placeOrder
+      security:
+        - api_key: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderReq'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid input
+        '422':
+          description: Validation exception
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: ["0000-0000-0000-0000"]
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                description: ID of the product
+              quantity:
+                type: integer
+                description: Item count
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    OrderReq:
+      type: object
+      description: Place a new order
+      properties:
+        couponCode:
+          type: string
+          description: Optional promo code applied to the order
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                description: ID of the product (required)
+              quantity:
+                type: integer
+                description: Item count (required)
+            required:
+              - productId
+              - quantity
+      required:
+        - items
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: ["10"]
+        name:
+          type: string
+          examples: ["Chicken Waffle"]
+        price:
+          type: number
+          format: float
+          description: Selling price
+        category:
+          type: string
+          examples: [Waffle]
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+      xml:
+        name: '##default'
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
+
+
