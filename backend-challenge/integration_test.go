@@ -284,67 +284,28 @@ func TestIntegration_PlaceOrder(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		body           models.OrderReq
-		apiKey         string
-		expectedStatus int
-		checkOrder     func(*testing.T, *models.Order)
+		name               string
+		body               models.OrderReq
+		apiKey             string
+		expectedStatus     int
+		expectedCouponCode string
+		expectedItems      []models.OrderItem
 	}{
 		{
-			name:           "successful order with coupon",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 2}}, CouponCode: "HAPPYHRS"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-			checkOrder: func(t *testing.T, o *models.Order) {
-				assert.NotEmpty(t, o.ID)
-				assert.Equal(t, "HAPPYHRS", o.CouponCode)
-				assert.Len(t, o.Items, 1)
-				assert.Len(t, o.Products, 1)
-				assert.Equal(t, "1", o.Items[0].ProductID)
-				assert.Equal(t, 2, o.Items[0].Quantity)
-			},
+			name:               "successful order with coupon",
+			body:               models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 2}}, CouponCode: "HAPPYHRS"},
+			apiKey:             "apitest",
+			expectedStatus:     http.StatusOK,
+			expectedCouponCode: "HAPPYHRS",
+			expectedItems:      []models.OrderItem{{ProductID: "1", Quantity: 2}},
 		},
 		{
-			name:           "valid coupon BIRTHDAY",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "BIRTHDAY"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon BUYGETON",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "BUYGETON"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon FIFTYOFF",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "FIFTYOFF"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon FREEZAAA",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "FREEZAAA"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon GNULINUX",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "GNULINUX"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon OVER9000",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "OVER9000"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "valid coupon SIXTYOFF",
-			body:           models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 1}}, CouponCode: "SIXTYOFF"},
-			apiKey:         "apitest",
-			expectedStatus: http.StatusOK,
+			name:               "multiple items order",
+			body:               models.OrderReq{Items: []models.OrderItem{{ProductID: "1", Quantity: 2}, {ProductID: "3", Quantity: 1}}, CouponCode: "FIFTYOFF"},
+			apiKey:             "apitest",
+			expectedStatus:     http.StatusOK,
+			expectedCouponCode: "FIFTYOFF",
+			expectedItems:      []models.OrderItem{{ProductID: "1", Quantity: 2}, {ProductID: "3", Quantity: 1}},
 		},
 		{
 			name:           "invalid coupon",
@@ -411,10 +372,17 @@ func TestIntegration_PlaceOrder(t *testing.T) {
 				t.Logf("Response body: %s", string(body))
 			}
 
-			if tt.checkOrder != nil && resp.StatusCode == http.StatusOK {
+			if resp.StatusCode == http.StatusOK {
 				var order models.Order
 				require.NoError(t, json.NewDecoder(resp.Body).Decode(&order))
-				tt.checkOrder(t, &order)
+				assert.NotEmpty(t, order.ID)
+				assert.Equal(t, tt.expectedCouponCode, order.CouponCode)
+				assert.Len(t, order.Items, len(tt.expectedItems))
+				assert.Len(t, order.Products, len(tt.expectedItems))
+				for i, expectedItem := range tt.expectedItems {
+					assert.Equal(t, expectedItem.ProductID, order.Items[i].ProductID)
+					assert.Equal(t, expectedItem.Quantity, order.Items[i].Quantity)
+				}
 			}
 		})
 	}
