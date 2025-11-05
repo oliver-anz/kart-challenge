@@ -7,93 +7,83 @@ import (
 	"testing"
 )
 
-func TestAuthMiddleware_ValidKey(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
-	})
-
-	wrapped := AuthMiddleware(handler)
-
-	req := httptest.NewRequest("POST", "/api/order", nil)
-	req.Header.Set("api_key", "apitest")
-	w := httptest.NewRecorder()
-
-	wrapped(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", w.Code)
+func TestAuthMiddleware(t *testing.T) {
+	tests := []struct {
+		name              string
+		apiKey            string
+		envKey            string
+		expectedStatus    int
+		shouldCallHandler bool
+	}{
+		{
+			name:              "valid key",
+			apiKey:            "apitest",
+			expectedStatus:    http.StatusOK,
+			shouldCallHandler: true,
+		},
+		{
+			name:              "missing key",
+			apiKey:            "",
+			expectedStatus:    http.StatusUnauthorized,
+			shouldCallHandler: false,
+		},
+		{
+			name:              "invalid key",
+			apiKey:            "wrongkey",
+			expectedStatus:    http.StatusUnauthorized,
+			shouldCallHandler: false,
+		},
+		{
+			name:              "custom env key - valid",
+			apiKey:            "customkey",
+			envKey:            "customkey",
+			expectedStatus:    http.StatusOK,
+			shouldCallHandler: true,
+		},
+		{
+			name:              "custom env key - old key rejected",
+			apiKey:            "apitest",
+			envKey:            "customkey",
+			expectedStatus:    http.StatusUnauthorized,
+			shouldCallHandler: false,
+		},
 	}
 
-	if w.Body.String() != "success" {
-		t.Errorf("Expected 'success', got %s", w.Body.String())
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envKey != "" {
+				os.Setenv("API_KEY", tt.envKey)
+				defer os.Unsetenv("API_KEY")
+			}
 
-func TestAuthMiddleware_MissingKey(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Error("Handler should not be called")
-	})
+			handlerCalled := false
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				handlerCalled = true
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("success"))
+			})
 
-	wrapped := AuthMiddleware(handler)
+			wrapped := AuthMiddleware(handler)
 
-	req := httptest.NewRequest("POST", "/api/order", nil)
-	w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/order", nil)
+			if tt.apiKey != "" {
+				req.Header.Set("api_key", tt.apiKey)
+			}
+			w := httptest.NewRecorder()
 
-	wrapped(w, req)
+			wrapped(w, req)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("Expected status 401, got %d", w.Code)
-	}
-}
+			if w.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
 
-func TestAuthMiddleware_InvalidKey(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Error("Handler should not be called")
-	})
+			if handlerCalled != tt.shouldCallHandler {
+				t.Errorf("Expected handler called = %v, got %v", tt.shouldCallHandler, handlerCalled)
+			}
 
-	wrapped := AuthMiddleware(handler)
-
-	req := httptest.NewRequest("POST", "/api/order", nil)
-	req.Header.Set("api_key", "wrongkey")
-	w := httptest.NewRecorder()
-
-	wrapped(w, req)
-
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("Expected status 401, got %d", w.Code)
-	}
-}
-
-func TestAuthMiddleware_CustomEnvKey(t *testing.T) {
-	// Set custom API key via environment
-	os.Setenv("API_KEY", "customkey")
-	defer os.Unsetenv("API_KEY")
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	wrapped := AuthMiddleware(handler)
-
-	req := httptest.NewRequest("POST", "/api/order", nil)
-	req.Header.Set("api_key", "customkey")
-	w := httptest.NewRecorder()
-
-	wrapped(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", w.Code)
-	}
-
-	// Test that old key no longer works
-	req2 := httptest.NewRequest("POST", "/api/order", nil)
-	req2.Header.Set("api_key", "apitest")
-	w2 := httptest.NewRecorder()
-
-	wrapped(w2, req2)
-
-	if w2.Code != http.StatusUnauthorized {
-		t.Errorf("Expected old key to be rejected, got status %d", w2.Code)
+			if tt.shouldCallHandler && w.Body.String() != "success" {
+				t.Errorf("Expected 'success', got %s", w.Body.String())
+			}
+		})
 	}
 }
