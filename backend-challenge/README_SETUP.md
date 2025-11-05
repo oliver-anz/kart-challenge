@@ -194,14 +194,18 @@ go build -o backend-challenge .
 
 ## Testing
 
-All endpoints have been tested and verified:
+Comprehensive test suite with **65% code coverage**:
 
-- ✅ Product listing
-- ✅ Single product retrieval
-- ✅ Order placement
-- ✅ Coupon validation
-- ✅ API key authentication
-- ✅ Error handling (404, 400, 401, 422)
+```bash
+# Run all tests
+make test
+
+# Run with coverage report
+make test-coverage
+
+# Run specific test types
+go test -short ./...           # Unit tests only
+go test -run Integration ./... # Integration tests only
 
 ## API Documentation
 
