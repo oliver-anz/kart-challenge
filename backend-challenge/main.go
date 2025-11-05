@@ -3,10 +3,15 @@ package main
 import (
 	"backend-challenge/api"
 	"backend-challenge/db"
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -24,10 +29,37 @@ func main() {
 	router := handler.SetupRoutes()
 
 	addr := ":" + *port
-	fmt.Printf("Server starting on port %s...\n", *port)
-	fmt.Printf("API available at http://localhost:%s/api\n", *port)
-
-	if err := http.ListenAndServe(addr, router); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: router,
 	}
+
+	// Channel to listen for interrupt signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		fmt.Printf("Server starting on port %s...\n", *port)
+		fmt.Printf("API available at http://localhost:%s/api\n", *port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-stop
+
+	fmt.Println("\nShutting down server gracefully...")
+
+	// Create a deadline for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
+
+	fmt.Println("Server stopped")
 }

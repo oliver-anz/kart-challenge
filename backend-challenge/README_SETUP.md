@@ -168,6 +168,15 @@ Command-line flags:
 - `-port`: Server port (default: 8080)
 - `-db`: Path to SQLite database (default: data/store.db)
 
+Environment variables:
+
+- `API_KEY`: API key for authentication (default: "apitest")
+
+```bash
+# Run with custom API key
+API_KEY=mysecretkey ./backend-challenge
+```
+
 ## Development
 
 ### Dependencies

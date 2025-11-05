@@ -3,11 +3,19 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 )
 
-const validAPIKey = "apitest"
+func getValidAPIKey() string {
+	// Allow API key to be set via environment variable, default to "apitest"
+	if key := os.Getenv("API_KEY"); key != "" {
+		return key
+	}
+	return "apitest"
+}
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	validAPIKey := getValidAPIKey()
 	return func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("api_key")
 		if apiKey != validAPIKey {
