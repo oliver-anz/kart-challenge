@@ -23,25 +23,11 @@ func (db *DB) GetAllProducts(ctx context.Context, limit, offset int) ([]models.P
 
 	var products []models.Product
 	for rows.Next() {
-		var p models.Product
-		var thumbnail, mobile, tablet, desktop sql.NullString
-
-		err := rows.Scan(&p.ID, &p.Name, &p.Category, &p.Price, &thumbnail, &mobile, &tablet, &desktop)
+		p, err := scanProduct(rows)
 		if err != nil {
 			return nil, err
 		}
-
-		// Only create Image object if at least one field has actual content
-		if thumbnail.String != "" || mobile.String != "" || tablet.String != "" || desktop.String != "" {
-			p.Image = &models.ProductImage{
-				Thumbnail: thumbnail.String,
-				Mobile:    mobile.String,
-				Tablet:    tablet.String,
-				Desktop:   desktop.String,
-			}
-		}
-
-		products = append(products, p)
+		products = append(products, *p)
 	}
 
 	return products, rows.Err()
@@ -50,10 +36,8 @@ func (db *DB) GetAllProducts(ctx context.Context, limit, offset int) ([]models.P
 func (db *DB) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	query := `SELECT id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop FROM products WHERE id = ?`
 
-	var p models.Product
-	var thumbnail, mobile, tablet, desktop sql.NullString
-
-	err := db.QueryRowContext(ctx, query, id).Scan(&p.ID, &p.Name, &p.Category, &p.Price, &thumbnail, &mobile, &tablet, &desktop)
+	row := db.QueryRowContext(ctx, query, id)
+	p, err := scanProduct(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -61,17 +45,7 @@ func (db *DB) GetProductByID(ctx context.Context, id string) (*models.Product, e
 		return nil, err
 	}
 
-	// Only create Image object if at least one field has actual content
-	if thumbnail.String != "" || mobile.String != "" || tablet.String != "" || desktop.String != "" {
-		p.Image = &models.ProductImage{
-			Thumbnail: thumbnail.String,
-			Mobile:    mobile.String,
-			Tablet:    tablet.String,
-			Desktop:   desktop.String,
-		}
-	}
-
-	return &p, nil
+	return p, nil
 }
 
 func (db *DB) IsCouponValid(ctx context.Context, code string) (bool, error) {
@@ -92,4 +66,31 @@ func (db *DB) IsCouponValid(ctx context.Context, code string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+// scanProduct scans a row into a Product, handling nullable image fields
+func scanProduct(scanner interface {
+	Scan(dest ...interface{}) error
+}) (*models.Product, error) {
+	var p models.Product
+	var thumbnail, mobile, tablet, desktop sql.NullString
+
+	err := scanner.Scan(&p.ID, &p.Name, &p.Category, &p.Price,
+		&thumbnail, &mobile, &tablet, &desktop)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only create Image object if at least one field has content
+	if thumbnail.String != "" || mobile.String != "" ||
+		tablet.String != "" || desktop.String != "" {
+		p.Image = &models.ProductImage{
+			Thumbnail: thumbnail.String,
+			Mobile:    mobile.String,
+			Tablet:    tablet.String,
+			Desktop:   desktop.String,
+		}
+	}
+
+	return &p, nil
 }
