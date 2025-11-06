@@ -97,3 +97,80 @@ func TestAuthMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestIDMiddleware(t *testing.T) {
+	handler := RequestIDMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	t.Run("generates ID", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Header().Get("X-Request-ID") == "" {
+			t.Error("X-Request-ID header not set")
+		}
+	})
+
+	t.Run("uses existing ID", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("X-Request-ID", "existing-id")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Header().Get("X-Request-ID") != "existing-id" {
+			t.Errorf("Expected existing-id, got %s", w.Header().Get("X-Request-ID"))
+		}
+	})
+}
+
+func TestCORSMiddleware(t *testing.T) {
+	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	t.Run("OPTIONS request", func(t *testing.T) {
+		req := httptest.NewRequest("OPTIONS", "/", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusNoContent {
+			t.Errorf("Expected 204, got %d", w.Code)
+		}
+
+		if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Error("CORS headers not set")
+		}
+	})
+
+	t.Run("regular request", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected 200, got %d", w.Code)
+		}
+
+		if w.Header().Get("Access-Control-Allow-Origin") == "" {
+			t.Error("CORS headers not set on regular request")
+		}
+	})
+}
+
+func TestMaxBodySizeMiddleware(t *testing.T) {
+	handler := MaxBodySizeMiddleware(10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	t.Run("within limit", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected 200, got %d", w.Code)
+		}
+	})
+}

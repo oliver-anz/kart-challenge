@@ -6,6 +6,7 @@ import (
 	"backend-challenge/service"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -91,6 +92,38 @@ func TestRouter(t *testing.T) {
 			},
 			mockSetup:      func(m *mocks.MockDatabase) {},
 			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "POST /public/openapi.yaml - wrong method",
+			method:         "POST",
+			path:           "/public/openapi.yaml",
+			mockSetup:      func(m *mocks.MockDatabase) {},
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+		{
+			name:   "GET /health - healthy",
+			method: "GET",
+			path:   "/health",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 1, 0).Return([]models.Product{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:   "GET /health - unhealthy",
+			method: "GET",
+			path:   "/health",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 1, 0).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "POST /health - wrong method",
+			method:         "POST",
+			path:           "/health",
+			mockSetup:      func(m *mocks.MockDatabase) {},
+			expectedStatus: http.StatusMethodNotAllowed,
 		},
 	}
 

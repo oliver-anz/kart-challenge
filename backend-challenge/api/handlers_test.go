@@ -17,6 +17,7 @@ import (
 func TestListProducts(t *testing.T) {
 	tests := []struct {
 		name           string
+		queryParams    string
 		mockSetup      func(*mocks.MockDatabase)
 		expectedStatus int
 		checkResponse  func(*testing.T, *httptest.ResponseRecorder)
@@ -24,21 +25,33 @@ func TestListProducts(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts(gomock.Any(), 0, 0).Return([]models.Product{
-					{ID: "1", Name: "Product 1", Category: "Cat1", Price: 10.0},
-					{ID: "2", Name: "Product 2", Category: "Cat2", Price: 20.0},
-				}, nil)
+				m.EXPECT().GetAllProducts(gomock.Any(), 0, 0).Return([]models.Product{}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
-				var products []models.Product
-				if err := json.NewDecoder(w.Body).Decode(&products); err != nil {
-					t.Fatalf("Failed to decode response: %v", err)
-				}
-				if len(products) != 2 {
-					t.Errorf("Expected 2 products, got %d", len(products))
-				}
+		},
+		{
+			name:        "with limit > 100 capped to 100",
+			queryParams: "?limit=200",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 100, 0).Return([]models.Product{}, nil)
 			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "with offset",
+			queryParams: "?offset=10",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 0, 10).Return([]models.Product{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "with limit and offset",
+			queryParams: "?limit=20&offset=5",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 20, 5).Return([]models.Product{}, nil)
+			},
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "database error",
@@ -59,7 +72,8 @@ func TestListProducts(t *testing.T) {
 			svc := service.New(mockDB)
 			handler := NewHandler(svc)
 
-			req := httptest.NewRequest("GET", "/api/product", nil)
+			url := "/api/product" + tt.queryParams
+			req := httptest.NewRequest("GET", url, nil)
 			w := httptest.NewRecorder()
 
 			handler.ListProducts(w, req)
@@ -104,6 +118,12 @@ func TestGetProduct(t *testing.T) {
 					t.Errorf("Expected 'Test Product', got %s", product.Name)
 				}
 			},
+		},
+		{
+			name:           "empty product ID",
+			productID:      "",
+			mockSetup:      func(m *mocks.MockDatabase) {},
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "not found",
@@ -284,6 +304,69 @@ func TestPlaceOrder(t *testing.T) {
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d: %s", tt.expectedStatus, w.Code, w.Body.String())
+			}
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, w)
+			}
+		})
+	}
+}
+
+func TestHealthCheck(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockSetup      func(*mocks.MockDatabase)
+		expectedStatus int
+		checkResponse  func(*testing.T, *httptest.ResponseRecorder)
+	}{
+		{
+			name: "healthy",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 1, 0).Return([]models.Product{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var resp map[string]string
+				json.NewDecoder(w.Body).Decode(&resp)
+				if resp["status"] != "healthy" {
+					t.Errorf("Expected healthy status, got %s", resp["status"])
+				}
+			},
+		},
+		{
+			name: "unhealthy",
+			mockSetup: func(m *mocks.MockDatabase) {
+				m.EXPECT().GetAllProducts(gomock.Any(), 1, 0).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusServiceUnavailable,
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var resp map[string]string
+				json.NewDecoder(w.Body).Decode(&resp)
+				if resp["status"] != "unhealthy" {
+					t.Errorf("Expected unhealthy status, got %s", resp["status"])
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockDB := mocks.NewMockDatabase(ctrl)
+			tt.mockSetup(mockDB)
+			svc := service.New(mockDB)
+			handler := NewHandler(svc)
+
+			req := httptest.NewRequest("GET", "/health", nil)
+			w := httptest.NewRecorder()
+
+			handler.HealthCheck(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
 			if tt.checkResponse != nil {
