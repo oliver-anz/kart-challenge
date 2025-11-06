@@ -1,25 +1,24 @@
 package api
 
 import (
-	"backend-challenge/db"
 	"backend-challenge/models"
+	"backend-challenge/service"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 type Handler struct {
-	DB db.Database
+	svc *service.Service
 }
 
-func NewHandler(database db.Database) *Handler {
-	return &Handler{DB: database}
+func NewHandler(svc *service.Service) *Handler {
+	return &Handler{svc: svc}
 }
 
 func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := h.DB.GetAllProducts()
+	products, err := h.svc.GetAllProducts(r.Context())
 	if err != nil {
 		h.sendError(w, http.StatusInternalServerError, "error", "Failed to fetch products")
 		return
@@ -38,7 +37,7 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := h.DB.GetProductByID(productID)
+	product, err := h.svc.GetProductByID(r.Context(), productID)
 	if err != nil {
 		h.sendError(w, http.StatusInternalServerError, "error", "Failed to fetch product")
 		return
@@ -76,37 +75,18 @@ func (h *Handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	products := make([]models.Product, 0)
-	for _, item := range req.Items {
-		product, err := h.DB.GetProductByID(item.ProductID)
-		if err != nil {
-			h.sendError(w, http.StatusInternalServerError, "error", "Failed to fetch product")
-			return
-		}
-		if product == nil {
-			h.sendError(w, http.StatusUnprocessableEntity, "error", "Product not found: "+item.ProductID)
-			return
-		}
-		products = append(products, *product)
-	}
-
-	if req.CouponCode != "" {
-		valid, err := h.DB.IsCouponValid(req.CouponCode)
-		if err != nil {
-			h.sendError(w, http.StatusInternalServerError, "error", "Failed to validate coupon")
-			return
-		}
-		if !valid {
+	order, err := h.svc.PlaceOrder(r.Context(), req)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidCoupon) {
 			h.sendError(w, http.StatusUnprocessableEntity, "error", "Invalid coupon code")
 			return
 		}
-	}
-
-	order := models.Order{
-		ID:         uuid.New().String(),
-		Items:      req.Items,
-		Products:   products,
-		CouponCode: req.CouponCode,
+		if errors.Is(err, service.ErrProductNotFound) {
+			h.sendError(w, http.StatusUnprocessableEntity, "error", "Product not found")
+			return
+		}
+		h.sendError(w, http.StatusInternalServerError, "error", "Failed to place order")
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

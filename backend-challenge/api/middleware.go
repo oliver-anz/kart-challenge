@@ -1,6 +1,7 @@
 package api
 
 import (
+	"backend-challenge/models"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -21,10 +22,10 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if apiKey != validAPIKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":    401,
-				"type":    "error",
-				"message": "Invalid or missing API key",
+			json.NewEncoder(w).Encode(models.ErrorResponse{
+				Code:    http.StatusUnauthorized,
+				Type:    "error",
+				Message: "Invalid or missing API key",
 			})
 			return
 		}

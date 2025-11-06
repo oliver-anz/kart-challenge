@@ -1,13 +1,16 @@
 package db
 
-import "backend-challenge/models"
+import (
+	"backend-challenge/models"
+	"context"
+)
 
 //go:generate mockgen -source=interface.go -destination=mocks/mock_db.go -package=mocks
 
 // Database defines the interface for database operations
 type Database interface {
-	GetAllProducts() ([]models.Product, error)
-	GetProductByID(id string) (*models.Product, error)
-	IsCouponValid(code string) (bool, error)
+	GetAllProducts(ctx context.Context) ([]models.Product, error)
+	GetProductByID(ctx context.Context, id string) (*models.Product, error)
+	IsCouponValid(ctx context.Context, code string) (bool, error)
 	Close() error
 }

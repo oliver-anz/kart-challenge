@@ -3,6 +3,7 @@ package api
 import (
 	"backend-challenge/db/mocks"
 	"backend-challenge/models"
+	"backend-challenge/service"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -27,7 +28,7 @@ func TestRouter(t *testing.T) {
 			method: "GET",
 			path:   "/api/product",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts().Return([]models.Product{}, nil)
+				m.EXPECT().GetAllProducts(gomock.Any()).Return([]models.Product{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -43,7 +44,7 @@ func TestRouter(t *testing.T) {
 			method: "GET",
 			path:   "/api/product/123",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("123").Return(&models.Product{ID: "123"}, nil)
+				m.EXPECT().GetProductByID(gomock.Any(), "123").Return(&models.Product{ID: "123"}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -70,7 +71,7 @@ func TestRouter(t *testing.T) {
 			},
 			headers: map[string]string{"api_key": "apitest"},
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(&models.Product{ID: "1", Name: "Test", Price: 10}, nil)
+				m.EXPECT().GetProductByID(gomock.Any(), "1").Return(&models.Product{ID: "1", Name: "Test", Price: 10}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -101,7 +102,8 @@ func TestRouter(t *testing.T) {
 			mockDB := mocks.NewMockDatabase(ctrl)
 			tt.mockSetup(mockDB)
 
-			handler := NewHandler(mockDB)
+			svc := service.New(mockDB)
+			handler := NewHandler(svc)
 			router := handler.SetupRoutes()
 
 			var reqBody []byte

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"testing"
 )
 
@@ -23,9 +24,10 @@ func setupTestDB(t *testing.T) *DB {
 
 func TestGetProductByID(t *testing.T) {
 	db := setupTestDB(t)
+	ctx := context.Background()
 
 	// Test existing product from init.sql (Waffle with Berries, ID=1)
-	product, err := db.GetProductByID("1")
+	product, err := db.GetProductByID(ctx, "1")
 	if err != nil {
 		t.Fatalf("Failed to get product: %v", err)
 	}
@@ -41,8 +43,9 @@ func TestGetProductByID(t *testing.T) {
 
 func TestGetProductByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
+	ctx := context.Background()
 
-	product, err := db.GetProductByID("999")
+	product, err := db.GetProductByID(ctx, "999")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -54,8 +57,9 @@ func TestGetProductByID_NotFound(t *testing.T) {
 
 func TestGetAllProducts(t *testing.T) {
 	db := setupTestDB(t)
+	ctx := context.Background()
 
-	all, err := db.GetAllProducts()
+	all, err := db.GetAllProducts(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get all products: %v", err)
 	}
@@ -68,6 +72,7 @@ func TestGetAllProducts(t *testing.T) {
 
 func TestIsCouponValid(t *testing.T) {
 	db := setupTestDB(t)
+	ctx := context.Background()
 
 	tests := []struct {
 		name  string
@@ -85,7 +90,7 @@ func TestIsCouponValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, err := db.IsCouponValid(tt.code)
+			valid, err := db.IsCouponValid(ctx, tt.code)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -98,9 +103,10 @@ func TestIsCouponValid(t *testing.T) {
 
 func TestProductImage_NilHandling(t *testing.T) {
 	db := setupTestDB(t)
+	ctx := context.Background()
 
 	// Vanilla Panna Cotta (ID=9) has images in init.sql
-	retrieved, err := db.GetProductByID("9")
+	retrieved, err := db.GetProductByID(ctx, "9")
 	if err != nil {
 		t.Fatalf("Failed to get product: %v", err)
 	}

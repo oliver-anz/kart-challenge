@@ -3,6 +3,7 @@ package api
 import (
 	"backend-challenge/db/mocks"
 	"backend-challenge/models"
+	"backend-challenge/service"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -23,7 +24,7 @@ func TestListProducts(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts().Return([]models.Product{
+				m.EXPECT().GetAllProducts(gomock.Any()).Return([]models.Product{
 					{ID: "1", Name: "Product 1", Category: "Cat1", Price: 10.0},
 					{ID: "2", Name: "Product 2", Category: "Cat2", Price: 20.0},
 				}, nil)
@@ -42,7 +43,7 @@ func TestListProducts(t *testing.T) {
 		{
 			name: "database error",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts().Return(nil, errors.New("database error"))
+				m.EXPECT().GetAllProducts(gomock.Any()).Return(nil, errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -55,7 +56,8 @@ func TestListProducts(t *testing.T) {
 
 			mockDB := mocks.NewMockDatabase(ctrl)
 			tt.mockSetup(mockDB)
-			handler := NewHandler(mockDB)
+			svc := service.New(mockDB)
+			handler := NewHandler(svc)
 
 			req := httptest.NewRequest("GET", "/api/product", nil)
 			w := httptest.NewRecorder()
@@ -85,7 +87,7 @@ func TestGetProduct(t *testing.T) {
 			name:      "success",
 			productID: "1",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(&models.Product{
+				m.EXPECT().GetProductByID(gomock.Any(), "1").Return(&models.Product{
 					ID:       "1",
 					Name:     "Test Product",
 					Category: "Test",
@@ -107,7 +109,7 @@ func TestGetProduct(t *testing.T) {
 			name:      "not found",
 			productID: "999",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("999").Return(nil, nil)
+				m.EXPECT().GetProductByID(gomock.Any(), "999").Return(nil, nil)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -115,7 +117,7 @@ func TestGetProduct(t *testing.T) {
 			name:      "database error",
 			productID: "1",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(nil, errors.New("database error"))
+				m.EXPECT().GetProductByID(gomock.Any(), "1").Return(nil, errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -128,7 +130,8 @@ func TestGetProduct(t *testing.T) {
 
 			mockDB := mocks.NewMockDatabase(ctrl)
 			tt.mockSetup(mockDB)
-			handler := NewHandler(mockDB)
+			svc := service.New(mockDB)
+			handler := NewHandler(svc)
 
 			req := httptest.NewRequest("GET", "/api/product/"+tt.productID, nil)
 			w := httptest.NewRecorder()
@@ -160,7 +163,7 @@ func TestPlaceOrder(t *testing.T) {
 				Items: []models.OrderItem{{ProductID: "1", Quantity: 2}},
 			},
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(&models.Product{
+				m.EXPECT().GetProductByID(gomock.Any(), "1").Return(&models.Product{
 					ID:       "1",
 					Name:     "Waffle",
 					Category: "Breakfast",
@@ -188,10 +191,10 @@ func TestPlaceOrder(t *testing.T) {
 				CouponCode: "HAPPYHRS",
 			},
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(&models.Product{
+				m.EXPECT().IsCouponValid(gomock.Any(), "HAPPYHRS").Return(true, nil)
+				m.EXPECT().GetProductByID(gomock.Any(), "1").Return(&models.Product{
 					ID: "1", Name: "Waffle", Category: "Breakfast", Price: 6.5,
 				}, nil)
-				m.EXPECT().IsCouponValid("HAPPYHRS").Return(true, nil)
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -209,10 +212,7 @@ func TestPlaceOrder(t *testing.T) {
 				CouponCode: "INVALID",
 			},
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("1").Return(&models.Product{
-					ID: "1", Name: "Waffle", Category: "Breakfast", Price: 6.5,
-				}, nil)
-				m.EXPECT().IsCouponValid("INVALID").Return(false, nil)
+				m.EXPECT().IsCouponValid(gomock.Any(), "INVALID").Return(false, nil)
 			},
 			expectedStatus: http.StatusUnprocessableEntity,
 		},
@@ -222,7 +222,7 @@ func TestPlaceOrder(t *testing.T) {
 				Items: []models.OrderItem{{ProductID: "999", Quantity: 1}},
 			},
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetProductByID("999").Return(nil, nil)
+				m.EXPECT().GetProductByID(gomock.Any(), "999").Return(nil, nil)
 			},
 			expectedStatus: http.StatusUnprocessableEntity,
 		},
@@ -265,7 +265,8 @@ func TestPlaceOrder(t *testing.T) {
 
 			mockDB := mocks.NewMockDatabase(ctrl)
 			tt.mockSetup(mockDB)
-			handler := NewHandler(mockDB)
+			svc := service.New(mockDB)
+			handler := NewHandler(svc)
 
 			var body []byte
 			switch v := tt.orderReq.(type) {

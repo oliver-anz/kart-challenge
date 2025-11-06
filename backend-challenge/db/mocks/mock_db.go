@@ -11,6 +11,7 @@ package mocks
 
 import (
 	models "backend-challenge/models"
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -55,46 +56,46 @@ func (mr *MockDatabaseMockRecorder) Close() *gomock.Call {
 }
 
 // GetAllProducts mocks base method.
-func (m *MockDatabase) GetAllProducts() ([]models.Product, error) {
+func (m *MockDatabase) GetAllProducts(ctx context.Context) ([]models.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllProducts")
+	ret := m.ctrl.Call(m, "GetAllProducts", ctx)
 	ret0, _ := ret[0].([]models.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllProducts indicates an expected call of GetAllProducts.
-func (mr *MockDatabaseMockRecorder) GetAllProducts() *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetAllProducts(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockDatabase)(nil).GetAllProducts))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockDatabase)(nil).GetAllProducts), ctx)
 }
 
 // GetProductByID mocks base method.
-func (m *MockDatabase) GetProductByID(id string) (*models.Product, error) {
+func (m *MockDatabase) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProductByID", id)
+	ret := m.ctrl.Call(m, "GetProductByID", ctx, id)
 	ret0, _ := ret[0].(*models.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProductByID indicates an expected call of GetProductByID.
-func (mr *MockDatabaseMockRecorder) GetProductByID(id any) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetProductByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockDatabase)(nil).GetProductByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockDatabase)(nil).GetProductByID), ctx, id)
 }
 
 // IsCouponValid mocks base method.
-func (m *MockDatabase) IsCouponValid(code string) (bool, error) {
+func (m *MockDatabase) IsCouponValid(ctx context.Context, code string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsCouponValid", code)
+	ret := m.ctrl.Call(m, "IsCouponValid", ctx, code)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsCouponValid indicates an expected call of IsCouponValid.
-func (mr *MockDatabaseMockRecorder) IsCouponValid(code any) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) IsCouponValid(ctx, code any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCouponValid", reflect.TypeOf((*MockDatabase)(nil).IsCouponValid), code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCouponValid", reflect.TypeOf((*MockDatabase)(nil).IsCouponValid), ctx, code)
 }

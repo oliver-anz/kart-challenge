@@ -2,32 +2,15 @@ package db
 
 import (
 	"backend-challenge/models"
+	"context"
 	"database/sql"
 	"fmt"
 )
 
-func (db *DB) InsertProduct(p *models.Product) error {
-	query := `
-		INSERT OR REPLACE INTO products (id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	var thumbnail, mobile, tablet, desktop sql.NullString
-	if p.Image != nil {
-		thumbnail = sql.NullString{String: p.Image.Thumbnail, Valid: p.Image.Thumbnail != ""}
-		mobile = sql.NullString{String: p.Image.Mobile, Valid: p.Image.Mobile != ""}
-		tablet = sql.NullString{String: p.Image.Tablet, Valid: p.Image.Tablet != ""}
-		desktop = sql.NullString{String: p.Image.Desktop, Valid: p.Image.Desktop != ""}
-	}
-
-	_, err := db.Exec(query, p.ID, p.Name, p.Category, p.Price, thumbnail, mobile, tablet, desktop)
-	return err
-}
-
-func (db *DB) GetAllProducts() ([]models.Product, error) {
+func (db *DB) GetAllProducts(ctx context.Context) ([]models.Product, error) {
 	query := `SELECT id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop FROM products`
 
-	rows, err := db.Query(query)
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -59,13 +42,13 @@ func (db *DB) GetAllProducts() ([]models.Product, error) {
 	return products, rows.Err()
 }
 
-func (db *DB) GetProductByID(id string) (*models.Product, error) {
+func (db *DB) GetProductByID(ctx context.Context, id string) (*models.Product, error) {
 	query := `SELECT id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop FROM products WHERE id = ?`
 
 	var p models.Product
 	var thumbnail, mobile, tablet, desktop sql.NullString
 
-	err := db.QueryRow(query, id).Scan(&p.ID, &p.Name, &p.Category, &p.Price, &thumbnail, &mobile, &tablet, &desktop)
+	err := db.QueryRowContext(ctx, query, id).Scan(&p.ID, &p.Name, &p.Category, &p.Price, &thumbnail, &mobile, &tablet, &desktop)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -86,7 +69,7 @@ func (db *DB) GetProductByID(id string) (*models.Product, error) {
 	return &p, nil
 }
 
-func (db *DB) IsCouponValid(code string) (bool, error) {
+func (db *DB) IsCouponValid(ctx context.Context, code string) (bool, error) {
 	// Empty coupon code is valid (no coupon provided)
 	if code == "" {
 		return true, nil
@@ -98,7 +81,7 @@ func (db *DB) IsCouponValid(code string) (bool, error) {
 
 	query := `SELECT COUNT(*) FROM valid_coupons WHERE code = ?`
 	var count int
-	err := db.QueryRow(query, code).Scan(&count)
+	err := db.QueryRowContext(ctx, query, code).Scan(&count)
 	if err != nil {
 		return false, fmt.Errorf("failed to validate coupon: %w", err)
 	}

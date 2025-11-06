@@ -4,6 +4,7 @@ import (
 	"backend-challenge/api"
 	"backend-challenge/db"
 	"backend-challenge/models"
+	"backend-challenge/service"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -19,7 +20,8 @@ func setupIntegrationTest(t *testing.T) (*httptest.Server, func()) {
 	database, err := db.New("data/store.db")
 	require.NoError(t, err)
 
-	handler := api.NewHandler(database)
+	svc := service.New(database)
+	handler := api.NewHandler(svc)
 	router := handler.SetupRoutes()
 	server := httptest.NewServer(router)
 

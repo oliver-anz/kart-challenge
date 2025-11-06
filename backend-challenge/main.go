@@ -3,6 +3,7 @@ package main
 import (
 	"backend-challenge/api"
 	"backend-challenge/db"
+	"backend-challenge/service"
 	"context"
 	"flag"
 	"fmt"
@@ -25,13 +26,17 @@ func main() {
 	}
 	defer database.Close()
 
-	handler := api.NewHandler(database)
+	svc := service.New(database)
+	handler := api.NewHandler(svc)
 	router := handler.SetupRoutes()
 
 	addr := ":" + *port
 	server := &http.Server{
-		Addr:    addr,
-		Handler: router,
+		Addr:         addr,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	// Channel to listen for interrupt signals
