@@ -132,7 +132,7 @@ make clean           # Clean artifacts
 
 ```bash
 make test            # Run all tests
-make test-coverage   # Generate coverage report (80%)
+make test-coverage   # Generate coverage report
 make generate        # Regenerate mocks
 ```
 
