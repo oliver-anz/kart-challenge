@@ -1,5 +1,5 @@
 -- Database initialization SQL
--- Run: sqlite3 data/store.db < init.sql
+-- Run: sqlite3 data/store.db < data/init.sql
 
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS valid_coupons;

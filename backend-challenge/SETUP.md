@@ -1,63 +1,36 @@
 # Backend Challenge - Food Ordering API
 
-A Go-based REST API server implementing the OpenAPI 3.1 specification for a food ordering system with coupon validation.
-
-## Features
-
-- ✅ Full OpenAPI 3.1 compliance
-- ✅ Product listing and retrieval
-- ✅ Order placement with validation
-- ✅ Coupon code validation (8-10 characters, appearing in 2+ coupon files)
-- ✅ API key authentication
-- ✅ SQLite database for products and coupons
-- ✅ Clean, idiomatic Go code
+Go-based REST API implementing OpenAPI 3.1 spec for food ordering with coupon validation.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Go 1.21 or higher
-- SQLite3 command-line tool
+- Go 1.21+
+- SQLite3
 
-### 1. Setup Database
+### Setup & Run
 
 ```bash
-# Create database with all products and valid coupons
-sqlite3 data/store.db < init.sql
+# Initialize database (pre-populated with products and coupons)
+make init
 
-# This will create:
-# - 9 products from the demo API
-# - 8 valid coupons: BIRTHDAY, BUYGETON, FIFTYOFF, FREEZAAA, GNULINUX, HAPPYHRS, OVER9000, SIXTYOFF
+# Build and run
+make run
 ```
 
-### 2. Build and Run
+Server starts at `http://localhost:8080`
+
+### Test API
 
 ```bash
-# Build the server
-go build -o backend-challenge .
-
-# Run the server
-./backend-challenge
-
-# Server will start on http://localhost:8080
-```
-
-### 3. Test the API
-
-```bash
-# List all products
+# List products
 curl http://localhost:8080/api/product
 
-# Get a specific product
+# Get product
 curl http://localhost:8080/api/product/1
 
-# Place an order (requires api_key header)
-curl -X POST http://localhost:8080/api/order \
-  -H "Content-Type: application/json" \
-  -H "api_key: apitest" \
-  -d '{"items":[{"productId":"1","quantity":2}]}'
-
-# Place an order with valid coupon
+# Place order (requires api_key header)
 curl -X POST http://localhost:8080/api/order \
   -H "Content-Type: application/json" \
   -H "api_key: apitest" \
@@ -66,148 +39,214 @@ curl -X POST http://localhost:8080/api/order \
 
 ## API Endpoints
 
-### GET /api/product
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/product` | GET | No | List all products (supports `?limit=N&offset=N`) |
+| `/api/product/{id}` | GET | No | Get product by ID |
+| `/api/order` | POST | Yes | Place order with optional coupon |
+| `/health` | GET | No | Health check endpoint |
+| `/public/openapi.yaml` | GET | No | OpenAPI specification |
 
-List all available products.
+### Request/Response Examples
 
-**Response:** Array of Product objects
-
-### GET /api/product/{productId}
-
-Get details of a specific product.
-
-**Parameters:**
-- `productId` (path, required): Product ID
-
-**Response:** Product object or 404 if not found
-
-### POST /api/order
-
-Place a new order.
-
-**Headers:**
-- `api_key`: apitest (required)
-
-**Request Body:**
+**POST /api/order**
 ```json
 {
-  "items": [
-    {"productId": "1", "quantity": 2}
-  ],
-  "couponCode": "HAPPYHRS" // optional
+  "items": [{"productId": "1", "quantity": 2}],
+  "couponCode": "HAPPYHRS"  // optional
 }
 ```
 
-**Response:** Order object with UUID and product details
-
-**Error Codes:**
-- 400: Invalid input
-- 401: Invalid or missing API key
-- 422: Validation error (invalid coupon, unknown product)
-
-## Coupon Validation
-
-Coupons are validated based on:
-1. Length: 8-10 characters
-2. Must appear in at least 2 of the 3 coupon base files
-
-**Test Coupons:**
-- ✅ HAPPYHRS (valid)
-- ✅ FIFTYOFF (valid)
-- ❌ SUPER100 (invalid)
-
-## Full Coupon Preprocessing (Optional)
-
-The database already contains all 8 valid coupons. To regenerate them from scratch:
-
-```bash
-# 1. Download coupon files to coupon/ directory
-cd coupon
-curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase1.gz
-curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase2.gz
-curl -O https://orderfoodonline-files.s3.ap-southeast-2.amazonaws.com/couponbase3.gz
-
-# 2. Run preprocessing (WARNING: Takes ~3 hours on M3 Pro, requires 15-18GB RAM)
-python3 process_coupons.py > valid_coupons.txt
+**Response**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "items": [{"productId": "1", "quantity": 2}],
+  "products": [{...}],
+  "couponCode": "HAPPYHRS"
+}
 ```
 
-See `coupon/README.md` for details on the preprocessing algorithm.
-
-## Project Structure
-
-```
-backend-challenge/
-├── main.go                 # Entry point and server setup
-├── api/
-│   ├── handlers.go         # HTTP request handlers
-│   ├── middleware.go       # Authentication middleware
-│   └── router.go           # Route definitions
-├── db/
-│   ├── db.go              # Database connection and schema
-│   └── queries.go         # Database queries
-├── models/
-│   └── models.go          # Data structures
-├── coupon/
-│   ├── process_coupons.py  # Coupon preprocessing script
-│   ├── valid_coupons.txt   # 8 valid coupon codes
-│   └── README.md           # Coupon processing documentation
-├── data/
-│   └── store.db           # SQLite database (pre-populated)
-├── init.sql               # Database initialization SQL
-└── README_SETUP.md        # This file
+**Error Response**
+```json
+{
+  "code": 422,
+  "type": "validation_error",
+  "message": "Invalid coupon code"
+}
 ```
 
 ## Configuration
 
-Command-line flags:
+### Command-line Flags
 
 ```bash
-./backend-challenge -port 8080 -db data/store.db
+./backend-challenge -port 8080
 ```
 
-- `-port`: Server port (default: 8080)
-- `-db`: Path to SQLite database (default: data/store.db)
+- `-port`: Server port (default: `8080`)
 
-Environment variables:
+### Environment Variables
 
-- `API_KEY`: API key for authentication (default: "apitest")
+- `API_KEY`: Authentication key (default: `apitest`)
 
 ```bash
-# Run with custom API key
-API_KEY=mysecretkey ./backend-challenge
+API_KEY=custom_key ./backend-challenge
 ```
+
+## Coupon Validation
+
+Valid coupons must:
+1. Be 8-10 characters long
+2. Appear in ≥2 of the 3 coupon files
+
+**Valid coupons:** `BIRTHDAY`, `BUYGETON`, `FIFTYOFF`, `FREEZAAA`, `GNULINUX`, `HAPPYHRS`, `OVER9000`, `SIXTYOFF`
+
+**Case sensitivity:** Coupons are case-sensitive. All valid coupons in the database are uppercase.
+
+Database is pre-populated with these coupons. See `coupon/README.md` to reproduce the preprocessing.
 
 ## Development
 
 ### Dependencies
 
 ```bash
-go get github.com/mattn/go-sqlite3
-go get github.com/google/uuid
+go mod download
 ```
 
-### Rebuilding
+Core dependencies:
+- `github.com/mattn/go-sqlite3` - SQLite driver
+- `github.com/google/uuid` - UUID generation
+- `github.com/stretchr/testify` - Testing assertions
+- `go.uber.org/mock` - Mock generation
+
+### Building
 
 ```bash
-go build -o backend-challenge .
+make build           # Build binary
+make run             # Build and run
+make clean           # Clean artifacts
 ```
 
-## Testing
-
-Comprehensive test suite with **65% code coverage**:
+### Testing
 
 ```bash
-# Run all tests
-make test
+make test            # Run all tests
+make test-coverage   # Generate coverage report (80%)
+make generate        # Regenerate mocks
+```
 
-# Run with coverage report
-make test-coverage
+**Coverage:** 80.0% total (API: 96.5%, Service: 100%, DB: 85.7%)
 
-# Run specific test types
-go test -short ./...           # Unit tests only
-go test -run Integration ./... # Integration tests only
+### Project Structure
 
-## API Documentation
+```
+backend-challenge/
+├── main.go              # Entry point, server lifecycle
+├── api/                 # HTTP layer
+│   ├── handlers.go      # Request handlers
+│   ├── middleware.go    # Auth, CORS, request ID
+│   └── router.go        # Route definitions
+├── service/             # Business logic
+│   ├── service.go       # Order processing
+│   └── errors.go        # Domain errors
+├── db/                  # Data layer
+│   ├── db.go            # Connection management
+│   ├── queries.go       # SQL queries
+│   ├── interface.go     # Database interface
+│   └── mocks/           # Generated mocks
+├── models/              # Data structures
+│   └── models.go        # Product, Order, etc.
+├── coupon/              # Coupon preprocessing (standalone)
+└── data/
+    ├── init.sql         # Schema and seed data
+    └── store.db         # SQLite database
+```
 
-Full OpenAPI specification available at:
-https://orderfoodonline.deno.dev/public/openapi.yaml
+## Changes from demo API
+
+The [demo API](https://orderfoodonline.deno.dev/api) intentionally omits edge case handling. This implementation addresses:
+
+**Edge cases handled:**
+- **Coupon validation**: Demo accepts any coupon code (including invalid ones). This implementation validates against the preprocessed coupon database.
+- **Negative quantities**: Demo accepts negative values (e.g., -5). Returns `400` for quantities ≤ 0.
+- **Empty product ID**: Demo returns product list. Returns `400` for missing/empty ID.
+
+**HTTP status code semantics:**
+- `400` - Malformed request (invalid JSON, empty items, missing productId, non-positive quantity, empty product ID)
+- `404` - Product not found (GET endpoint only)
+- `422` - Validation error (invalid coupon, product doesn't exist in order)
+- `500` - Server error (database failures)
+
+**Implementation notes:**
+- **Product IDs**: OpenAPI spec defines `productId` as `integer/int64`, but demo API uses strings (e.g., `"1"`). We follow the demo's string implementation for consistency with existing data.
+- **Coupon case sensitivity**: Not specified in requirements. Implementation treats coupons as case-sensitive (all valid coupons are uppercase).
+
+## Design Decisions
+
+### Architecture
+
+**3-Layer Clean Architecture**
+- **API Layer:** HTTP handling, validation, serialization
+- **Service Layer:** Business logic, orchestration
+- **DB Layer:** Data access, queries
+
+**Why:** Clear separation of concerns, testable, maintainable. Each layer has single responsibility and can be tested in isolation, though perhaps excessive for a small web server.
+
+### Database: SQLite
+
+**Why SQLite:**
+- Embedded, zero-config
+- Perfect for local/demo use
+- Simple file-based deployment
+- Can commit database for even easier setup
+
+### Order Handling
+
+Orders are not persisted to the database. They are validated, assigned a UUID, and returned immediately.
+
+**Why:** OpenAPI spec has no order retrieval endpoints (no `GET /order` or `GET /order/{id}`). For the purposes of this demo, there's no need to store them.
+
+### Coupon Preprocessing: Standalone Python Script
+
+**Why Python:**
+- Simpler set operations (`set` type built-in)
+- Faster prototyping for one-time processing
+- Result stored in DB—preprocessing doesn't run per request
+
+### Graceful Shutdown: Signal-Based Context
+
+Uses `signal.NotifyContext` for clean shutdown on SIGINT/SIGTERM. Prevents request interruption.
+
+### Testing Strategy
+
+**~80% coverage achieved with:**
+- **Unit tests:** Handlers, service, DB queries (mocked)
+- **Integration tests:** Full stack with test DB
+- **Table-driven tests:** Concise, parameterized test cases
+
+**Uncovered paths:** Mostly error branches (DB connection failures, shutdown errors) - low ROI to test.
+
+### Error Handling
+
+**Typed domain errors** (`service.ErrInvalidCoupon`, `service.ErrProductNotFound`)
+- Enables error type checking with `errors.Is()`
+- Separates business logic errors from infrastructure errors
+- Allows precise HTTP status mapping (400 vs 422 vs 500)
+
+### Middleware Stack
+
+**Order:** MaxBodySize → CORS → RequestID → Auth (per-route)
+
+**Why:**
+- Body limit first (DoS protection)
+- CORS early (preflight support)
+- Request ID for traceability
+- Auth only on the POST order endpoint
+
+### Pagination
+
+**Pagination:** Not in spec but added query params (`?limit=100&offset=0`) with 100-item cap for pagination.
+
+---
+
