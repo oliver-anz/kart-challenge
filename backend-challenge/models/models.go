@@ -2,10 +2,10 @@ package models
 
 type Product struct {
 	ID       string        `json:"id"`
+	Image    *ProductImage `json:"image,omitempty"`
 	Name     string        `json:"name"`
 	Category string        `json:"category"`
 	Price    float64       `json:"price"`
-	Image    *ProductImage `json:"image,omitempty"`
 }
 
 type ProductImage struct {
