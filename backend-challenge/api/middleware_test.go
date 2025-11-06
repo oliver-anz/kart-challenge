@@ -51,10 +51,20 @@ func TestAuthMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Save original env value to avoid test pollution
+			originalKey := os.Getenv("API_KEY")
 			if tt.envKey != "" {
 				os.Setenv("API_KEY", tt.envKey)
-				defer os.Unsetenv("API_KEY")
+			} else {
+				os.Unsetenv("API_KEY")
 			}
+			defer func() {
+				if originalKey != "" {
+					os.Setenv("API_KEY", originalKey)
+				} else {
+					os.Unsetenv("API_KEY")
+				}
+			}()
 
 			handlerCalled := false
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -59,7 +59,7 @@ func TestGetAllProducts(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
 
-	all, err := db.GetAllProducts(ctx)
+	all, err := db.GetAllProducts(ctx, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to get all products: %v", err)
 	}

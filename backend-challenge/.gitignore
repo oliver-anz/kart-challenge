@@ -9,3 +9,21 @@ coupon/process_log*.txt
 test*.db
 coverage.out
 coverage.html
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Log files
+*.log
+process_log*.txt
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~

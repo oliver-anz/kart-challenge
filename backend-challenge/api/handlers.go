@@ -5,7 +5,9 @@ import (
 	"backend-challenge/service"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -18,8 +20,28 @@ func NewHandler(svc *service.Service) *Handler {
 }
 
 func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := h.svc.GetAllProducts(r.Context())
+	// Parse pagination query parameters
+	limit := 0 // 0 means no limit
+	offset := 0
+
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+			if limit > 100 {
+				limit = 100 // Max limit of 100
+			}
+		}
+	}
+
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	products, err := h.svc.GetAllProducts(r.Context(), limit, offset)
 	if err != nil {
+		log.Printf("Error fetching products: %v", err)
 		h.sendError(w, http.StatusInternalServerError, "error", "Failed to fetch products")
 		return
 	}
@@ -39,6 +61,7 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.svc.GetProductByID(r.Context(), productID)
 	if err != nil {
+		log.Printf("Error fetching product %s: %v", productID, err)
 		h.sendError(w, http.StatusInternalServerError, "error", "Failed to fetch product")
 		return
 	}
@@ -85,12 +108,34 @@ func (h *Handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 			h.sendError(w, http.StatusUnprocessableEntity, "error", "Product not found")
 			return
 		}
+		log.Printf("Error placing order: %v", err)
 		h.sendError(w, http.StatusInternalServerError, "error", "Failed to place order")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(order)
+}
+
+func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	// Check database connectivity
+	ctx := r.Context()
+	_, err := h.svc.GetAllProducts(ctx, 1, 0) // Just fetch one product to test connectivity
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "unhealthy",
+			"reason": "database unavailable",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "healthy",
+	})
 }
 
 func (h *Handler) sendError(w http.ResponseWriter, statusCode int, errType, message string) {

@@ -24,7 +24,7 @@ func TestListProducts(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts(gomock.Any()).Return([]models.Product{
+				m.EXPECT().GetAllProducts(gomock.Any(), 0, 0).Return([]models.Product{
 					{ID: "1", Name: "Product 1", Category: "Cat1", Price: 10.0},
 					{ID: "2", Name: "Product 2", Category: "Cat2", Price: 20.0},
 				}, nil)
@@ -43,7 +43,7 @@ func TestListProducts(t *testing.T) {
 		{
 			name: "database error",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts(gomock.Any()).Return(nil, errors.New("database error"))
+				m.EXPECT().GetAllProducts(gomock.Any(), 0, 0).Return(nil, errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},

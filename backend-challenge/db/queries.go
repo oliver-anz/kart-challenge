@@ -7,8 +7,13 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetAllProducts(ctx context.Context) ([]models.Product, error) {
+func (db *DB) GetAllProducts(ctx context.Context, limit, offset int) ([]models.Product, error) {
 	query := `SELECT id, name, category, price, image_thumbnail, image_mobile, image_tablet, image_desktop FROM products`
+
+	// Add pagination if limit is specified
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+	}
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {

@@ -45,5 +45,20 @@ func (h *Handler) SetupRoutes() http.Handler {
 		AuthMiddleware(h.PlaceOrder)(w, r)
 	})
 
-	return mux
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h.HealthCheck(w, r)
+	})
+
+	// Apply middlewares: max body size -> CORS -> Request ID
+	const maxBodySize = 1024 * 1024 // 1 MB
+	maxBodyMiddleware := MaxBodySizeMiddleware(maxBodySize)
+
+	handler := maxBodyMiddleware(mux)
+	handler = CORSMiddleware(handler)
+	handler = RequestIDMiddleware(handler)
+	return handler
 }

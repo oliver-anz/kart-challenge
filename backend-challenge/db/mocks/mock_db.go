@@ -56,18 +56,18 @@ func (mr *MockDatabaseMockRecorder) Close() *gomock.Call {
 }
 
 // GetAllProducts mocks base method.
-func (m *MockDatabase) GetAllProducts(ctx context.Context) ([]models.Product, error) {
+func (m *MockDatabase) GetAllProducts(ctx context.Context, limit, offset int) ([]models.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllProducts", ctx)
+	ret := m.ctrl.Call(m, "GetAllProducts", ctx, limit, offset)
 	ret0, _ := ret[0].([]models.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllProducts indicates an expected call of GetAllProducts.
-func (mr *MockDatabaseMockRecorder) GetAllProducts(ctx any) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetAllProducts(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockDatabase)(nil).GetAllProducts), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllProducts", reflect.TypeOf((*MockDatabase)(nil).GetAllProducts), ctx, limit, offset)
 }
 
 // GetProductByID mocks base method.

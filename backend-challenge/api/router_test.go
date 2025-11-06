@@ -28,7 +28,7 @@ func TestRouter(t *testing.T) {
 			method: "GET",
 			path:   "/api/product",
 			mockSetup: func(m *mocks.MockDatabase) {
-				m.EXPECT().GetAllProducts(gomock.Any()).Return([]models.Product{}, nil)
+				m.EXPECT().GetAllProducts(gomock.Any(), 0, 0).Return([]models.Product{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

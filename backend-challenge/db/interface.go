@@ -9,7 +9,7 @@ import (
 
 // Database defines the interface for database operations
 type Database interface {
-	GetAllProducts(ctx context.Context) ([]models.Product, error)
+	GetAllProducts(ctx context.Context, limit, offset int) ([]models.Product, error)
 	GetProductByID(ctx context.Context, id string) (*models.Product, error)
 	IsCouponValid(ctx context.Context, code string) (bool, error)
 	Close() error
