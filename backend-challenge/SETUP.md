@@ -6,7 +6,7 @@ Go-based REST API implementing OpenAPI 3.1 spec for food ordering with coupon va
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.23+
 - SQLite3
 
 ### Setup & Run
@@ -181,6 +181,7 @@ The [demo API](https://orderfoodonline.deno.dev/api) intentionally omits edge ca
 **Implementation notes:**
 - **Product IDs**: OpenAPI spec defines `productId` as `integer/int64`, but demo API uses strings (e.g., `"1"`). We follow the demo's string implementation for consistency with existing data.
 - **Coupon case sensitivity**: Not specified in requirements. Implementation treats coupons as case-sensitive (all valid coupons are uppercase).
+- **Order response**: Includes `couponCode` field following demo API behavior, though OpenAPI spec's Order schema doesn't define it.
 
 ## Design Decisions
 

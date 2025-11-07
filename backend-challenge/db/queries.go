@@ -49,11 +49,7 @@ func (db *DB) GetProductByID(ctx context.Context, id string) (*models.Product, e
 }
 
 func (db *DB) IsCouponValid(ctx context.Context, code string) (bool, error) {
-	// Empty coupon code is valid (no coupon provided)
-	if code == "" {
-		return true, nil
-	}
-
+	// Coupons are preprocessed but best to defensively check length
 	if len(code) < 8 || len(code) > 10 {
 		return false, nil
 	}

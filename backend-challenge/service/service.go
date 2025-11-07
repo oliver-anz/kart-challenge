@@ -55,6 +55,7 @@ func (s *Service) PlaceOrder(ctx context.Context, req models.OrderReq) (*models.
 	}
 
 	// Generate order
+	// The order is not stored or will not persist anywhere for the purposes of this demo
 	order := &models.Order{
 		ID:         uuid.New().String(),
 		Items:      req.Items,

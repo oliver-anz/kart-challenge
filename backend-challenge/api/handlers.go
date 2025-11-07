@@ -120,7 +120,8 @@ func (h *Handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	// Check database connectivity
 	ctx := r.Context()
-	_, err := h.svc.GetAllProducts(ctx, 1, 0) // Just fetch one product to test connectivity
+	// Just fetch one product to test connectivity
+	_, err := h.svc.GetAllProducts(ctx, 1, 0)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)

@@ -12,6 +12,7 @@ import (
 
 func getValidAPIKey() string {
 	// Allow API key to be set via environment variable, default to "apitest"
+	// Could be improved by having a proper config loaded on startup and not fetching the var everytime
 	if key := os.Getenv("API_KEY"); key != "" {
 		return key
 	}
